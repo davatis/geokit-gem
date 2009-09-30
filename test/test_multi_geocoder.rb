@@ -52,27 +52,27 @@ class MultiGeocoderTest < BaseGeocoderTest #:nodoc: all
   end
 
   def test_reverse_geocode_successful_first
-    Geokit::Geocoders::GoogleGeocoder.expects(:reverse_geocode).with(@latlng).returns(@success)
+    Geokit::Geocoders::GoogleGeocoder.expects(:reverse_geocode).with(@latlng, {}).returns(@success)
     assert_equal @success, Geokit::Geocoders::MultiGeocoder.reverse_geocode(@latlng)
   end
   
   def test_reverse_geocode_failover
-    Geokit::Geocoders::GoogleGeocoder.expects(:reverse_geocode).with(@latlng).returns(@failure)
-    Geokit::Geocoders::YahooGeocoder.expects(:reverse_geocode).with(@latlng).returns(@success)
+    Geokit::Geocoders::GoogleGeocoder.expects(:reverse_geocode).with(@latlng, {}).returns(@failure)
+    Geokit::Geocoders::YahooGeocoder.expects(:reverse_geocode).with(@latlng, {}).returns(@success)
     assert_equal @success, Geokit::Geocoders::MultiGeocoder.reverse_geocode(@latlng)    
   end
   
   def test_reverse_geocode_double_failover
-    Geokit::Geocoders::GoogleGeocoder.expects(:reverse_geocode).with(@latlng).returns(@failure)
-    Geokit::Geocoders::YahooGeocoder.expects(:reverse_geocode).with(@latlng).returns(@failure)
-    Geokit::Geocoders::UsGeocoder.expects(:reverse_geocode).with(@latlng).returns(@success)
+    Geokit::Geocoders::GoogleGeocoder.expects(:reverse_geocode).with(@latlng, {}).returns(@failure)
+    Geokit::Geocoders::YahooGeocoder.expects(:reverse_geocode).with(@latlng, {}).returns(@failure)
+    Geokit::Geocoders::UsGeocoder.expects(:reverse_geocode).with(@latlng, {}).returns(@success)
     assert_equal @success, Geokit::Geocoders::MultiGeocoder.reverse_geocode(@latlng)    
   end
   
   def test_reverse_geocode_failure
-    Geokit::Geocoders::GoogleGeocoder.expects(:reverse_geocode).with(@latlng).returns(@failure)
-    Geokit::Geocoders::YahooGeocoder.expects(:reverse_geocode).with(@latlng).returns(@failure)
-    Geokit::Geocoders::UsGeocoder.expects(:reverse_geocode).with(@latlng).returns(@failure)
+    Geokit::Geocoders::GoogleGeocoder.expects(:reverse_geocode).with(@latlng, {}).returns(@failure)
+    Geokit::Geocoders::YahooGeocoder.expects(:reverse_geocode).with(@latlng, {}).returns(@failure)
+    Geokit::Geocoders::UsGeocoder.expects(:reverse_geocode).with(@latlng, {}).returns(@failure)
     assert_equal @failure, Geokit::Geocoders::MultiGeocoder.reverse_geocode(@latlng)    
   end
 
@@ -86,7 +86,7 @@ class MultiGeocoderTest < BaseGeocoderTest #:nodoc: all
   def test_reverse_geocode_with_blank_latlng
     t1 = Geokit::Geocoders.provider_order # will need to reset after
     Geokit::Geocoders.provider_order = [:google]
-    Geokit::Geocoders::GoogleGeocoder.expects(:reverse_geocode).with("").returns(@failure)
+    Geokit::Geocoders::GoogleGeocoder.expects(:reverse_geocode).with("", {}).returns(@failure)
     assert_equal @failure, Geokit::Geocoders::MultiGeocoder.reverse_geocode("")
     Geokit::Geocoders.provider_order = t1 # reset to orig values
   end
