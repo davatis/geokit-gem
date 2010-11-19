@@ -427,7 +427,14 @@ module Geokit
       #           If you'd like the Google Geocoder to prefer results within a given viewport,
       #           you can pass a Geokit::Bounds object as the :bias value.
       #
+      # * :lang - This option makes the Google Geocoder return localized results.
+      #           Just give a country code and hope Google supports it ;-)
+      #           Defaults to 'en'.
+      #
       # ==== EXAMPLES
+      # # Get German locality names
+      # Geokit::Geocoders::GoogleGeocoder.geocode('Szczecin', :lang => :de)
+      #
       # # By default, the geocoder will return Syracuse, NY
       # Geokit::Geocoders::GoogleGeocoder.geocode('Syracuse').country_code # => 'US'
       # # With country code biasing, it returns Syracuse in Sicily, Italy
@@ -440,8 +447,9 @@ module Geokit
       # Geokit::Geocoders::GoogleGeocoder.geocode('Winnetka', :bias => bounds).state # => 'CA'
       def self.do_geocode(address, options = {})
         bias_str = options[:bias] ? construct_bias_string_from_options(options[:bias]) : ''
+        lang = options[:lang] || Geokit::Geocoders::lang || 'en'
         address_str = address.is_a?(GeoLoc) ? address.to_geocodeable_s : address
-        res = self.call_geocoder_service("http://maps.google.com/maps/geo?q=#{Geokit::Inflector::url_escape(address_str)}&output=xml#{bias_str}&key=#{Geokit::Geocoders::google}&oe=utf-8")
+        res = self.call_geocoder_service("http://maps.google.com/maps/geo?q=#{Geokit::Inflector::url_escape(address_str)}&output=xml#{bias_str}&key=#{Geokit::Geocoders::google}&oe=utf-8&hl=#{lang.to_s.downcase}")
         return GeoLoc.new if !res.is_a?(Net::HTTPSuccess)
         xml = res.body
         logger.debug "Google geocoding. Address: #{address}. Result: #{xml}"
