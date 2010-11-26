@@ -44,12 +44,6 @@ module Geokit
       
     end
     
-    def url_escape(s)
-    s.gsub(/([^ a-zA-Z0-9_.-]+)/nu) do
-      '%' + $1.unpack('H2' * $1.size).join('%').upcase
-      end.tr(' ', '+')
-    end
-    
     def camelize(str)
       str.split('_').map {|w| w.capitalize}.join
     end
@@ -261,8 +255,8 @@ module Geokit
       def self.construct_request(location)
         url = ""
         url += add_ampersand(url) + "stno=#{location.street_number}" if location.street_address
-        url += add_ampersand(url) + "addresst=#{Geokit::Inflector::url_escape(location.street_name)}" if location.street_address
-        url += add_ampersand(url) + "city=#{Geokit::Inflector::url_escape(location.city)}" if location.city
+        url += add_ampersand(url) + "addresst=#{URI.escape(location.street_name)}" if location.street_address
+        url += add_ampersand(url) + "city=#{URI.escape(location.city)}" if location.city
         url += add_ampersand(url) + "prov=#{location.state}" if location.state
         url += add_ampersand(url) + "postal=#{location.zip}" if location.zip
         url += add_ampersand(url) + "auth=#{Geokit::Geocoders::geocoder_ca}" if Geokit::Geocoders::geocoder_ca
@@ -284,7 +278,7 @@ module Geokit
       def self.do_geocode(address, options = {})
         address_str = address.is_a?(GeoLoc) ? address.to_geocodeable_s : address
         
-        query = (address_str =~ /^\d{5}(?:-\d{4})?$/ ? "zip" : "address") + "=#{Geokit::Inflector::url_escape(address_str)}"
+        query = (address_str =~ /^\d{5}(?:-\d{4})?$/ ? "zip" : "address") + "=#{URI.escape(address_str)}"
         url = if GeoKit::Geocoders::geocoder_us         
           "http://#{GeoKit::Geocoders::geocoder_us}@geocoder.us/member/service/csv/geocode"
         else
@@ -331,7 +325,7 @@ module Geokit
       # Template method which does the geocode lookup.
       def self.do_geocode(address, options = {})
         address_str = address.is_a?(GeoLoc) ? address.to_geocodeable_s : address
-        url="http://api.local.yahoo.com/MapsService/V1/geocode?appid=#{Geokit::Geocoders::yahoo}&location=#{Geokit::Inflector::url_escape(address_str)}"
+        url="http://api.local.yahoo.com/MapsService/V1/geocode?appid=#{Geokit::Geocoders::yahoo}&location=#{URI.escape(address_str)}"
         res = self.call_geocoder_service(url)
         return GeoLoc.new if !res.is_a?(Net::HTTPSuccess)
         xml = res.body
@@ -379,7 +373,7 @@ module Geokit
         address_str = address.is_a?(GeoLoc) ? address.to_geocodeable_s : address
         # geonames need a space seperated search string
         address_str.gsub!(/,/, " ")
-        params = "/postalCodeSearch?placename=#{Geokit::Inflector::url_escape(address_str)}&maxRows=10"
+        params = "/postalCodeSearch?placename=#{URI.escape(address_str)}&maxRows=10"
         
         if(GeoKit::Geocoders::geonames)
           url = "http://ws.geonames.net#{params}&username=#{GeoKit::Geocoders::geonames}"
@@ -431,7 +425,7 @@ module Geokit
       # Template method which does the reverse-geocode lookup.
       def self.do_reverse_geocode(latlng) 
         latlng=LatLng.normalize(latlng)
-        res = self.call_geocoder_service("http://maps.google.com/maps/geo?ll=#{Geokit::Inflector::url_escape(latlng.ll)}&output=xml&key=#{Geokit::Geocoders::google}&oe=utf-8")
+        res = self.call_geocoder_service("http://maps.google.com/maps/geo?ll=#{URI.escape(latlng.ll)}&output=xml&key=#{Geokit::Geocoders::google}&oe=utf-8")
         #        res = Net::HTTP.get_response(URI.parse("http://maps.google.com/maps/geo?ll=#{Geokit::Inflector::url_escape(address_str)}&output=xml&key=#{Geokit::Geocoders::google}&oe=utf-8"))
         return GeoLoc.new unless (res.is_a?(Net::HTTPSuccess) || res.is_a?(Net::HTTPOK))
         xml = res.body
@@ -467,9 +461,9 @@ module Geokit
       def self.do_geocode(address, options = {})
         bias_str = options[:bias] ? construct_bias_string_from_options(options[:bias]) : ''
         address_str = address.is_a?(GeoLoc) ? address.to_geocodeable_s : address
-        res = self.call_geocoder_service("http://maps.google.com/maps/geo?q=#{Geokit::Inflector::url_escape(address_str)}&output=xml#{bias_str}&key=#{Geokit::Geocoders::google}&oe=utf-8")
+        res = self.call_geocoder_service("http://maps.google.com/maps/geo?q=#{URI.escape(address_str)}&output=xml#{bias_str}&key=#{Geokit::Geocoders::google}&oe=utf-8")
         return GeoLoc.new if !res.is_a?(Net::HTTPSuccess)
-        xml = res.body
+        xml = res.body.force_encoding('utf-8')
         logger.debug "Google geocoding. Address: #{address}. Result: #{xml}"
         return self.xml2GeoLoc(xml, address)        
       end
@@ -563,7 +557,7 @@ module Geokit
       # Template method which does the reverse-geocode lookup.
       def self.do_reverse_geocode(latlng) 
         latlng=LatLng.normalize(latlng)
-        res = self.call_geocoder_service("http://maps.google.com/maps/api/geocode/json?sensor=false&latlng=#{Geokit::Inflector::url_escape(latlng.ll)}")
+        res = self.call_geocoder_service("http://maps.google.com/maps/api/geocode/json?sensor=false&latlng=#{URI.escape(latlng.ll)}")
         return GeoLoc.new unless (res.is_a?(Net::HTTPSuccess) || res.is_a?(Net::HTTPOK))
         json = res.body
         logger.debug "Google reverse-geocoding. LL: #{latlng}. Result: #{json}"
@@ -609,10 +603,10 @@ module Geokit
         address_str = address.is_a?(GeoLoc) ? address.to_geocodeable_s : address
 
         if !Geokit::Geocoders::google_client_id.nil? && !Geokit::Geocoders::google_premier_secret_key.nil?
-          url = "http://maps.googleapis.com/maps/api/geocode/json?address=#{Geokit::Inflector::url_escape(address_str)}#{bias_str}&client=#{Geokit::Geocoders::google_client_id}&sensor=false&oe=utf-8"
+          url = "http://maps.googleapis.com/maps/api/geocode/json?address=#{URI.escape(address_str)}#{bias_str}&client=#{Geokit::Geocoders::google_client_id}&sensor=false&oe=utf-8"
           Geokit::Geocoders::Geocoder.sign_url(url,Geokit::Geocoders::google_premier_secret_key)
         else
-          "http://maps.google.com/maps/api/geocode/json?sensor=false&address=#{Geokit::Inflector::url_escape(address_str)}#{bias_str}"
+          "http://maps.google.com/maps/api/geocode/json?sensor=false&address=#{URI.escape(address_str)}#{bias_str}"
         end
       end
  
@@ -623,7 +617,7 @@ module Geokit
           "&region=#{bias.to_s.downcase}"
         elsif bias.is_a?(Bounds)
           # viewport biasing
-          Geokit::Inflector::url_escape("&bounds=#{bias.sw.to_s}|#{bias.ne.to_s}")
+          URI.escape("&bounds=#{bias.sw.to_s}|#{bias.ne.to_s}")
         end
       end
 
