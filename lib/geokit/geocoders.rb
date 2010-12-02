@@ -86,7 +86,6 @@ module Geokit
     @@logger=Logger.new(STDOUT)
     @@logger.level=Logger::INFO
     @@domain = nil
-    @@lang = nil
     
     def self.__define_accessors
       class_variables.each do |v| 
@@ -135,8 +134,8 @@ module Geokit
       # Main method which calls the do_reverse_geocode template method which subclasses
       # are responsible for implementing.  Returns a populated GeoLoc or an
       # empty one with a failed success code.
-      def self.reverse_geocode(latlng, options = {})
-        res = do_reverse_geocode(latlng, options)
+      def self.reverse_geocode(latlng)
+        res = do_reverse_geocode(latlng)
         return res.success? ? res : GeoLoc.new        
       end
       
@@ -151,7 +150,7 @@ module Geokit
       # Not all geocoders can do reverse geocoding. So, unless the subclass explicitly overrides this method,
       # a call to reverse_geocode will return an empty GeoLoc. If you happen to be using MultiGeocoder,
       # this will cause it to failover to the next geocoder, which will hopefully be one which supports reverse geocoding.
-      def self.do_reverse_geocode(latlng, options = {})
+      def self.do_reverse_geocode(latlng)
         return GeoLoc.new
       end
       
@@ -433,11 +432,10 @@ module Geokit
       # ==== EXAMPLE
       # # Get German locality names
       # Geokit::Geocoders::GoogleGeocoder.reverse_geocode('51.0, 9.0', :lang => :de)
-      def self.do_reverse_geocode(latlng, options = {})
+      def self.do_reverse_geocode(latlng) 
         latlng=LatLng.normalize(latlng)
         lang = options[:lang] || Geokit::Geocoders::lang || 'en'
-        res = self.call_geocoder_service("http://maps.google.com/maps/geo?ll=#{Geokit::Inflector::url_escape(latlng.ll)}&output=xml&key=#{Geokit::Geocoders::google}&oe=utf-8&hl=#{lang.to_s.downcase}")
-
+        res = self.call_geocoder_service("http://maps.google.com/maps/geo?ll=#{URI.escape(latlng.ll)}&output=xml&key=#{Geokit::Geocoders::google}&oe=utf-8&hl=#{lang.to_s.downcase}")
         #        res = Net::HTTP.get_response(URI.parse("http://maps.google.com/maps/geo?ll=#{Geokit::Inflector::url_escape(address_str)}&output=xml&key=#{Geokit::Geocoders::google}&oe=utf-8"))
         return GeoLoc.new unless (res.is_a?(Net::HTTPSuccess) || res.is_a?(Net::HTTPOK))
         xml = res.body
@@ -481,7 +479,7 @@ module Geokit
         bias_str = options[:bias] ? construct_bias_string_from_options(options[:bias]) : ''
         lang = options[:lang] || Geokit::Geocoders::lang || 'en'
         address_str = address.is_a?(GeoLoc) ? address.to_geocodeable_s : address
-        res = self.call_geocoder_service("http://maps.google.com/maps/geo?q=#{Geokit::Inflector::url_escape(address_str)}&output=xml#{bias_str}&key=#{Geokit::Geocoders::google}&oe=utf-8&hl=#{lang.to_s.downcase}")
+        res = self.call_geocoder_service("http://maps.google.com/maps/geo?q=#{URI.escape(address_str)}&output=xml#{bias_str}&key=#{Geokit::Geocoders::google}&oe=utf-8&hl=#{lang.to_s.downcase}")
         return GeoLoc.new if !res.is_a?(Net::HTTPSuccess)
         xml = res.body.force_encoding('utf-8')
         logger.debug "Google geocoding. Address: #{address}. Result: #{xml}"
@@ -886,11 +884,11 @@ module Geokit
       # This method will call one or more geocoders in the order specified in the 
       # configuration until one of the geocoders work, only this time it's going
       # to try to reverse geocode a geographical point.
-      def self.do_reverse_geocode(latlng, options = {})
+      def self.do_reverse_geocode(latlng)
         Geokit::Geocoders::provider_order.each do |provider|
           begin
             klass = Geokit::Geocoders.const_get "#{Geokit::Inflector::camelize(provider.to_s)}Geocoder"
-            res = klass.send :reverse_geocode, latlng, options
+            res = klass.send :reverse_geocode, latlng
             return res if res.success?
           rescue
             logger.error("Something has gone very wrong during reverse geocoding, OR you have configured an invalid class name in Geokit::Geocoders::provider_order. LatLng: #{latlng}. Provider: #{provider}")
