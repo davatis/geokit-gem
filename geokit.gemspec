@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.email = ["aforward@gmail.com"]
   s.extra_rdoc_files = ["Manifest.txt", "README.markdown"]
   s.files = ["Manifest.txt", "README.markdown", "Rakefile", "lib/geokit/geocoders.rb", "lib/geokit.rb", "lib/geokit/mappable.rb", "spec/geocoder_spec.rb", "spec/spec_helper.rb", "test/test_base_geocoder.rb", "test/test_bounds.rb", "test/test_ca_geocoder.rb", "test/test_geoloc.rb", "test/test_google_geocoder.rb", "test/test_latlng.rb", "test/test_multi_geocoder.rb", "test/test_us_geocoder.rb", "test/test_yahoo_geocoder.rb"]
-  s.has_rdoc = true
+  #s.has_rdoc = true
   s.homepage = %q{http://github.com/aforward/geokit-gem}
   s.rdoc_options = ["--main", "README.markdown"]
   s.require_paths = ["lib"]
